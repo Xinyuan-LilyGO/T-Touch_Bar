@@ -137,6 +137,7 @@ public:
     uint8_t read_device_mode(void);
     void write_device_mode(DEVICE_MODE_Enum);
     void sleep_mdoe();
+    void monitor_mdoe();
     uint8_t read_gesture_id(void);
     uint8_t read_td_status(void);
     uint8_t read_touch_number(void);

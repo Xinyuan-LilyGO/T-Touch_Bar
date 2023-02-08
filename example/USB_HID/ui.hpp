@@ -5,6 +5,7 @@ extern USBHIDConsumerControl ConsumerControl;
 LV_FONT_DECLARE(font_alibaba_26);
 extern  char time_String[10] ;
 extern char date_String[50];
+extern FT6336U  ft6336u;
 
 //meun group  主菜单组
 lv_obj_t *meun_obj_bg;
@@ -19,6 +20,10 @@ lv_obj_t *meun_clock_obj;
 lv_obj_t *meun_clock_img;
 lv_obj_t *meun_calculator_obj;
 lv_obj_t *meun_calculator_img;
+lv_obj_t *meun_sleep_obj;
+lv_obj_t *meun_sleep_img;
+
+
 
 //brightness group 亮度组UI
 lv_obj_t *ui_brightness_group;
@@ -63,6 +68,7 @@ LV_IMG_DECLARE(icons_Speaker);
 LV_IMG_DECLARE(icons_Browser);
 LV_IMG_DECLARE(icons_clock);
 LV_IMG_DECLARE(icons_calculator);
+LV_IMG_DECLARE(icons_sleep);
 LV_IMG_DECLARE(icons_up);
 LV_IMG_DECLARE(icons_down);
 LV_IMG_DECLARE(icons_search);
@@ -70,6 +76,7 @@ LV_IMG_DECLARE(icons_refresh);
 LV_IMG_DECLARE(icons_forward);
 LV_IMG_DECLARE(icons_fallback);
 LV_IMG_DECLARE(icons_circle);
+
 
 #define _UI_MODIFY_FLAG_ADD 0
 #define _UI_MODIFY_FLAG_REMOVE 1
@@ -214,12 +221,52 @@ static void meun_clock_obj_event_cb(lv_event_t *e)
     }
 }
 
+
+
+
 static void meun_calculator_obj_event_cb(lv_event_t *e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);     lv_obj_t *target = lv_event_get_target(e);
     if (event_code == LV_EVENT_CLICKED ) {
         ConsumerControl.press(CONSUMER_CONTROL_CALCULATOR);
         ConsumerControl.release();
+    }
+}
+
+static void meun_sleep_obj_event_cb(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t *obj = lv_event_get_target(e);
+    if (code == LV_EVENT_CLICKED) {
+        // LV_LOG_USER("sleep");
+        pinMode(48, INPUT_PULLDOWN);
+        pinMode(18, INPUT_PULLDOWN);
+        pinMode(17, INPUT_PULLDOWN);
+        pinMode(16, INPUT_PULLDOWN);
+        pinMode(15, INPUT_PULLDOWN);
+        pinMode(TFT2_CS, INPUT_PULLUP);
+        pinMode(TFT1_CS, INPUT_PULLUP);
+        pinMode(INT_N_PIN, INPUT_PULLUP);
+
+        //触摸屏唤醒  Touch screen wake up
+        pinMode(45, OUTPUT);
+        digitalWrite(45, HIGH);
+        gpio_deep_sleep_hold_en();
+        gpio_hold_en(GPIO_NUM_45);
+        esp_sleep_enable_ext1_wakeup(GPIO_SEL_12, ESP_EXT1_WAKEUP_ALL_LOW); //1 = High, 0 = Low
+        ft6336u.monitor_mdoe();
+
+        //IO0唤醒  IO0 wake up
+        // gpio_deep_sleep_hold_dis();
+        // gpio_hold_en(GPIO_NUM_0);
+        // pinMode(0, INPUT_PULLUP);
+        // esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, 0); //1 = High, 0 = Low
+
+        delay(1000);
+        //Go to sleep now
+        Serial.println("Going to sleep now");
+        esp_deep_sleep_start();
+        Serial.println("This will never be printed");
     }
 }
 
@@ -404,6 +451,18 @@ void ui_screen_init(void)
     lv_img_set_src(meun_calculator_img, &icons_calculator);
     lv_obj_align(meun_calculator_img, LV_ALIGN_CENTER, 0, 0);
 
+
+    /*Create the sleep component in the menu 在菜单创建休眠组件*/
+    meun_sleep_obj = lv_imgbtn_create(ui_meun_group);
+    lv_obj_add_style(meun_sleep_obj, &icon_bg_style_def, 0);
+    lv_obj_add_event_cb(meun_sleep_obj, meun_sleep_obj_event_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_align(meun_sleep_obj, LV_ALIGN_LEFT_MID, 5 + 80 * 5, 0);
+
+    meun_sleep_img = lv_img_create(meun_sleep_obj);
+    lv_obj_set_style_img_recolor_opa(meun_sleep_img, LV_OPA_COVER, LV_STATE_DEFAULT);
+    lv_obj_set_style_img_recolor(meun_sleep_img, lv_color_hex(0x00BFFF), LV_PART_MAIN);
+    lv_img_set_src(meun_sleep_img, &icons_sleep);
+    lv_obj_align(meun_sleep_img, LV_ALIGN_CENTER, 0, 0);
 
     //****************************Create a brightness adjustment group 创建亮度调节组****************************
     ui_brightness_group = lv_obj_create(meun_obj_bg); //创建亮度调节组对象

@@ -58,6 +58,11 @@ void FT6336U::sleep_mdoe()
 {
     writeByte(FT6336U_ADDR_POWER_MODE, 0x03);
 }
+void FT6336U::monitor_mdoe()
+{
+    writeByte(FT6336U_ADDR_POWER_MODE, 0x01);
+}
+
 uint8_t FT6336U::read_gesture_id(void)
 {
     return readByte(FT6336U_ADDR_GESTURE_ID);
